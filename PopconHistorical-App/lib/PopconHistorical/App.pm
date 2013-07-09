@@ -11,7 +11,7 @@ our $VERSION = '0.1';
 my $dsn= "DBI:mysql:database=popcon;host=127.0.0.1;port=3306";
 my $user= "root";
 my $password= undef;
-my $dbh = DBI->connect($dsn, $user, $password) or die $!;
+my $dbh = DBI->connect($dsn, $user, $password, { 'auto_reconnect'=>1 }) or die $!;
 
 sub max_y
 {
@@ -97,12 +97,30 @@ get '/' => sub {
 		  ]
 	    },
 
-	    { title=>'MySQL Clients',
+	    { title=>'MySQL 5.1 Clients',
 	      items=> [
-		  { name=>'Percona Clients Vs MariaDB Clients',
-		    's'=> [ { url=>'?title=Percona%20Clients%20vs%20MariaDB%20Clients&packages=percona-server-client-5.1,percona-server-client-5.5,percona-server-client-5.6,,mariadb-client-5.1,mariadb-client-5.2,mariadb-client-5.3,mariadb-client-5.5,mariadb-client-10.0'} ] },
-		  { name=>'All Clients',
-		    's'=> [ { url=>'?title=Percona%20Clients%20vs%20MariaDB%20Clients&packages=percona-server-client-5.1,percona-server-client-5.5,percona-server-client-5.6,,mariadb-client-5.1,mariadb-client-5.2,mariadb-client-5.3,mariadb-client-5.5,mariadb-client-10.0,mysql-client-5.0,mysql-client-5.1,mysql-client-5.5'} ] }
+		  { name=>'Percona 5.1 Clients Vs MariaDB 5.[123] Clients',
+		    's'=> [ { url=>'?title=Percona%205.1%20Clients%20vs%20MariaDB%205.[123]%20Clients&packages=percona-server-client-5.1,mariadb-client-5.1,mariadb-client-5.2,mariadb-client-5.3'} ] },
+		  { name=>'All 5.1 Clients',
+		    's'=> [ { url=>'?title=All%205.1%20Clients&packages=percona-server-client-5.1,mariadb-client-5.1,mariadb-client-5.2,mariadb-client-5.3,mysql-client-5.1'} ] }
+		  ]
+	    },
+
+	    { title=>'MySQL 5.5 Clients',
+	      items=> [
+		  { name=>'Percona 5.5 Clients Vs MariaDB 5.5 Clients',
+		    's'=> [ { url=>'?title=Percona%205.5%20Clients%20vs%20MariaDB%205.5%20Clients&packages=percona-server-client-5.5,mariadb-client-5.5'} ] },
+		  { name=>'All 5.5 Clients',
+		    's'=> [ { url=>'?title=All%205.5%20Clients&packages=percona-server-client-5.5,mariadb-client-5.5,mysql-client-5.5'} ] }
+		  ]
+	    },
+
+	    { title=>'MySQL 5.6 Clients',
+	      items=> [
+		  { name=>'Percona 5.6 Clients Vs MariaDB 10.0 Clients',
+		    's'=> [ { url=>'?title=Percona%205.6%20Clients%20vs%20MariaDB%2010.0%20Clients&packages=percona-server-client-5.6,mariadb-client-10.0'} ] },
+		  { name=>'All 5.6 Clients',
+		    's'=> [ { url=>'?title=All%205.6%20Clients&packages=percona-server-client-5.6,mariadb-client-10.0,mysql-client-5.6'} ] }
 		  ]
 	    },
 
