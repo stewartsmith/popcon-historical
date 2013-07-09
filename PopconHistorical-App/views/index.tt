@@ -34,73 +34,25 @@
              <% END %>
       </div>
 
-      <h2>Graphs</h2>
+<% FOREACH distro = distros %>
+      <h2>Graphs for <% distro %></h2>
       <ul>
-      <li>Percona Toolkit
+      <% FOREACH comparison = comparisons %>
+        <li><% comparison.title %>
           <ul>
-            <li><a href="/graph/ubuntu/pt">Percona Toolkit in Ubuntu</a></li>
-	  </ul>
-      </li>
-      <li>XtraBackup
-          <ul>
-            <li><a href="/graph/ubuntu/xtrabackup">Percona XtraBackup in Ubuntu</a></li>
-	    <li><a href="/graph/ubuntu/backup">MySQL backup solutions in Ubuntu</a></li>
-	  </ul>
-      </li>
-      <li>5.1 versions
-          <ul>
-	  <li><a href="/graph/ubuntu/ps51vsmaria51">PS 5.1 vs MariaDB 5.1 in Ubuntu</a></li>
-	  <li><a href="/graph/ubuntu/all51">PS, Maria and Oracle 5.1 in Ubuntu</a></li>
-	  </ul>
-      </li>
-
-      <li>5.5 versions
-          <ul>
-	  <li><a href="/graph/ubuntu/ps55vsmaria55">PS 5.5 vs MariaDB 5.5 in Ubuntu</a></li>
-	  <li><a href="/graph/ubuntu/all55">PS, Maria and Oracle 5.5 in Ubuntu</a></li>
-	  </ul>
-      </li>
-
-      <li>5.6 versions
-          <ul>
-	  <li><a href="/graph/ubuntu/ps56vsmaria10">PS 5.6 vs MariaDB 10.0 in Ubuntu</a></li>
-	  <li><a href="/graph/ubuntu/all56">PS 5.6, Maria 10.0 and Oracle 5.6 in Ubuntu</a></li>
-	  </ul>
-      </li>
-      </ul>
-
-      <h2>Raw Data</h2>
-      <ul>
-      <li>Percona Toolkit
-          <ul>
-            <li><a href="/data/ubuntu/pt">Percona Toolkit in Ubuntu</a></li>
-	  </ul>
-      </li>
-      <li>XtraBackup
-          <ul>
-	    <li><a href="/data/ubuntu/xtrabackup">Percona XtraBackup in Ubuntu</a></li>
-	    <li><a href="/data/ubuntu/backup">MySQL backup solutions in Ubuntu</a></li>
+	  <% FOREACH item = comparison.items %>
+	    <li><% item.name %>
+	    	<% FOREACH g = item.s %>
+		<a href="/graph/<% distro %>/inst<% g.url %>">Installed</a> (<a href="/data/<% distro %>/inst.txt<% g.url %>">txt</a> <a href="/data/<% distro %>/inst.csv<% g.url %>">csv</a>)
+		<a href="/graph/<% distro %>/recent<% g.url %>">Recent</a> (<a href="/data/<% distro %>/recent.txt<% g.url %>">txt</a> <a href="/data/<% distro %>/recent.csv<% g.url %>">csv</a>)
+		<% END %>
+            </li>
+          <% END %>
           </ul>
-      </li>
-      <li>5.1 versions
-       <ul>
-        <li><a href="/data/ubuntu/ps51vsmaria51">PS 5.1 vs MariaDB 5.1 in Ubuntu</a></li>
-        <li><a href="/data/ubuntu/all51">PS, Maria and Oracle 5.1 in Ubuntu</a></li>
-       </ul>
-      </li>
-      <li>5.5 versions
-       <ul>
-        <li><a href="/data/ubuntu/ps55vsmaria55">PS 5.5 vs MariaDB 5.5 in Ubuntu</a></li>
-        <li><a href="/data/ubuntu/all55">PS, Maria and Oracle 5.5 in Ubuntu</a></li>
-       </ul>
-      </li>
-      <li>5.6/10.0 versions
-       <ul>
-        <li><a href="/data/ubuntu/ps56vsmaria10">PS 5.6 vs MariaDB 10.0 in Ubuntu</a></li>
-        <li><a href="/data/ubuntu/all56">PS 5.6 , Maria 10.0 and Oracle 5.6 in Ubuntu</a></li>
-       </ul>
-      </li>
-
+        </li>
+      <% END %>
       </ul>
+<% END %>
+
 
     </div>

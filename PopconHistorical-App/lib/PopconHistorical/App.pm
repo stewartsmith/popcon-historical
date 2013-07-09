@@ -35,7 +35,72 @@ sub get_distros()
 }
 
 get '/' => sub {
-    template 'index', { 'distros' => [get_distros()] };
+    template 'index', {
+	'distros' => [get_distros()] ,
+	'comparisons' => [
+	    { title=>'MySQL',
+	      items=>[
+		  { name=>'MySQL',
+		    's'=> [
+			{ url=>'?title=MySQL&packages=mysql-server-5.0,mysql-server-5.1,mysql-server-5.5,mysql-server-5.6' },
+			]
+		  },
+		  ]
+	    },
+	    { title=>'Percona Toolkit',
+	      items=>[
+		  { name=>'Percona Toolkit',
+		    's'=> [ { url=>'?title=Percona%20Toolkit%20vs%20Maatkit&packages=percona-toolkit,maatkit' } ] }
+		  ]
+	    },
+	    { title=>'Percona XtraBackup',
+	      items=> [
+		  { name=>'Percona XtraBackup',
+		    's'=> [ { url=>'?title=Percona%20XtraBackup&packages=percona-xtrabackup'} ] },
+		  { name=>'MySQL Backup solutions',
+		    's'=> [ { url=>'?title=MySQL%20Backup&packages=percona-xtrabackup,mydumper,mylvmbackup'} ] },
+		  ]
+	    },
+	    { title=>'5.1 Server versions',
+	      items=> [
+		  { name=>'Percona 5.1 Vs MariaDB 5.[123]',
+		    's'=> [ { url=>'?title=Percona%20Server%205.1%20vs%20MariaDB%205.[123]&packages=percona-server-server-5.1,mariadb-server-5.1,mariadb-server-5.2,mariadb-server-5.3'} ] },
+		  { name=>'All 5.1',
+		    's'=> [ { url=>'?title=MySQL%205.1&packages=percona-server-server-5.1,mariadb-server-5.1,mariadb-server-5.2,mariadb-server-5.3,mysql-server-5.1'} ] },
+		  ]
+	    },
+
+	    { title=>'5.5 Server versions',
+	      items=> [
+		  { name=>'Percona 5.5 Vs MariaDB 5.5',
+		    's'=> [ { url=>'?title=Percona%20Server%205.5%20vs%20MariaDB%205.5&packages=percona-server-server-5.5,mariadb-server-5.5'} ] },
+		  { name=>'All 5.5',
+		    's'=> [ { url=>'?title=MySQL%205.5&packages=percona-server-server-5.5,mariadb-server-5.5,mysql-server-5.5'} ] },
+		  ]
+	    },
+
+	    { title=>'5.6 Server versions',
+	      items=> [
+		  { name=>'Percona 5.6 Vs MariaDB 10.0',
+		    's'=> [ { url=>'?title=Percona%20Server%205.6%20vs%20MariaDB%2010.0&packages=percona-server-server-5.6,mariadb-server-10.0'} ] },
+		  { name=>'All 5.6',
+		    's'=> [ { url=>'?title=MySQL%205.6&packages=percona-server-server-5.6,mariadb-server-10.0,mysql-server-5.6'} ] },
+		  ]
+	    },
+
+	    { title=>'Galera',
+	      items=> [
+		  { name=>'Percona XtraDB Cluster Vs MariaDB Galera 5.5',
+		    's'=> [ { url=>'?title=Percona%20XtraDB%20Cluster%205.6%20vs%20MariaDB%20Galera%205.5&packages=percona-xtradb-cluster-server-5.5,mariadb-galera-server-5.5'} ] },
+		  { name=>'PXC vs MariaDB vs MMM',
+		    's'=> [ { url=>'?title=MySQL%20Clustering&packages=percona-xtradb-cluster-server-5.5,mariadb-galera-server-5.5,mysql-mmm-tools'} ] },
+		  ]
+	    },
+
+
+
+	    ]
+    };
 };
 
 sub get_popcons($)
@@ -57,10 +122,14 @@ sub get_popcons($)
 }    
 
 
-sub get_nr_for_package($$)
+sub get_nr_for_package($$$)
 {
-    my ($pkg, $distro) = @_;
-    my $sql= "select popcon_date,inst_nr from popcon_package LEFT JOIN popcon ON popcon.id=popcon_id LEFT JOIN package ON package_id=package.id where package=? and distro=? order by package, popcon_date";
+    my ($pkg, $distro,$counter) = @_;
+
+    my $c= "vote_nr+no_files_nr+recent_nr";
+    $c= "inst_nr" if($counter eq "inst");
+    
+    my $sql= "select popcon_date,$c from popcon_package LEFT JOIN popcon ON popcon.id=popcon_id LEFT JOIN package ON package_id=package.id where package=? and distro=? order by package, popcon_date";
     my $sth= $dbh->prepare($sql);
     $sth->execute($pkg, $distro) or die $!;
 
@@ -77,7 +146,7 @@ sub get_nr_for_package($$)
 
 sub get_all_data($@)
 {
-    my ($distro, @packages) = @_;
+    my ($counter, $distro, @packages) = @_;
 
     my %p = get_popcons($distro);
 
@@ -85,7 +154,7 @@ sub get_all_data($@)
 
     foreach (@packages)
     {
-	push @rdata, [get_nr_for_package($_,$distro)];
+	push @rdata, [get_nr_for_package($_,$distro, $counter)];
     }
 
     foreach my $pkg (0..$#packages)
@@ -111,32 +180,76 @@ sub get_all_data($@)
     return @data;
 }
 
-get '/data/ubuntu/xtrabackup' => sub {
-    my @data = get_nr_for_package('percona-xtrabackup','Ubuntu');
+get '/data/*/*.*' => sub {
+    my ($distro, $inst, $fmt) = splat;
+    my @pkgs = split /,/,param 'packages';
 
-    content_type 'text/plain';
+    my @data = get_all_data($inst, $distro, @pkgs);
 
-    my $r="Date,percona-xtrabackup\n";
-    foreach(0..$#{$data[0]})
+    content_type 'text/plain' if $fmt eq 'txt';
+    content_type 'text/csv' if $fmt eq 'csv';
+
+    my $r=join ',',("Date",@pkgs);
+    $r.="\n";
+    foreach my $s (0..$#{$data[0]})
     {
-	$r.= "$data[0][$_],$data[1][$_]\n"
+	$r.= "$data[0][$s]";
+	$r.=",$data[$_+1][$s]" foreach (0..$#pkgs);
+	$r.="\n";
     }
-
     return $r;
 };
 
-get '/graph/ubuntu/xtrabackup' => sub {
-    my @data = get_nr_for_package('percona-xtrabackup','Ubuntu');
+
+get '/graph/*/*' => sub {
+    my ($distro, $inst) = splat;
+    my @pkgs = split /,/,param 'packages';
+
+    my @data = get_all_data($inst, $distro, @pkgs);
 
     my $graph = GD::Graph::lines->new(900, 550);
 
-    $graph->set_legend('Percona Xtrabackup');
+    $graph->set_legend(@pkgs);
+
+    my $max_y_val;
+    {
+	my @all;
+	push @all, @{$data[$_]} foreach 1..$#data;
+	$max_y_val = max_y(@all);
+    }
 
 
     $graph->set(
 	x_label           => 'Date',
 	y_label           => 'Installs',
-	title             => "Percona XtraBackup in Ubuntu",
+	title             => param('title')." in $distro ($inst)",
+	y_max_value       => $max_y_val,
+	y_tick_number     => 10,
+#	y_label_skip      => 4,
+	x_label_skip      => 2,
+	line_width        => 2,
+	) or die $graph->error;
+    
+    my $gd = $graph->plot(\@data) or die $graph->error;
+
+    content_type 'png';
+    return $gd->png;
+};
+
+get '/graph/*/*/*' => sub {
+    my ($distro, $pkg, $inst) = splat;
+
+    my @data = get_nr_for_package($pkg, $distro, $inst);
+
+    my $graph = GD::Graph::lines->new(900, 550);
+
+    $graph->set_legend($pkg);
+
+
+    $graph->set(
+	x_label           => 'Date',
+	y_label           => 'Installs',
+	title             => "$pkg in $distro ($inst)",
 	y_max_value       => max_y(@{$data[1]}),
 	y_tick_number     => 10,
 #	y_label_skip      => 4,
@@ -151,321 +264,22 @@ get '/graph/ubuntu/xtrabackup' => sub {
 };
 
 
-get '/data/ubuntu/pt' => sub {
-    my @data = get_all_data('Ubuntu', 'percona-toolkit', 'maatkit');
+get '/data/*/*/*' => sub {
+    my ($distro,$pkg,$inst) = splat;
+    my @data = get_nr_for_package($pkg, $distro, $inst);
 
-    content_type 'text/plain';
+    content_type 'text/csv';
 
-    my $r="Date,percona-toolkit, maatkit\n";
+    my $r="Date,$pkg in $distro ($inst)\n";
+
     foreach(0..$#{$data[0]})
     {
-	$r.= "$data[0][$_],$data[1][$_],$data[2][$_]\n"
+	$r.= "$data[0][$_],$data[1][$_]\n"
     }
 
     return $r;
 };
 
-get '/graph/ubuntu/pt' => sub {
-    my @data = get_all_data('Ubuntu', 'percona-toolkit', 'maatkit');
-
-    my $graph = GD::Graph::lines->new(900, 550);
-
-    $graph->set_legend('Percona Toolkit', 'Maatkit');
-
-    $graph->set(
-	x_label           => 'Date',
-	y_label           => 'Installs',
-	title             => "Percona Toolkit vs Maatkit in Ubuntu",
-	y_max_value       => max_y(@{$data[1]}, @{$data[2]}),
-	y_tick_number     => 10,
-#	y_label_skip      => 4,
-	x_label_skip      => 2,
-	line_width        => 2,
-	) or die $graph->error;
-    
-    my $gd = $graph->plot(\@data) or die $graph->error;
-
-    content_type 'png';
-    return $gd->png;
-};
-
-
-get '/data/ubuntu/backup' => sub {
-    my @data = get_all_data('Ubuntu', 'percona-xtrabackup', 'mydumper', 'mylvmbackup');
-
-    content_type 'text/plain';
-
-    my $r="Date,percona-xtrabackup, mydumper, mylvmbackup\n";
-    foreach(0..$#{$data[0]})
-    {
-	$r.= "$data[0][$_],$data[1][$_],$data[2][$_],$data[3][$_]\n"
-    }
-
-    return $r;
-};
-
-
-get '/graph/ubuntu/backup' => sub {
-    my @data = get_all_data('Ubuntu', 'percona-xtrabackup', 'mydumper', 'mylvmbackup');
-
-    my $graph = GD::Graph::lines->new(900, 550);
-
-    $graph->set_legend('Percona Xtrabackup', 'mydumper', 'mylvmbackup');
-
-    $graph->set(
-	x_label           => 'Date',
-	y_label           => 'Installs',
-	title             => "MySQL backup solutions in Ubuntu",
-	y_max_value       => max_y(@{$data[1]}, @{$data[2]}, @{$data[3]}),
-	y_tick_number     => 10,
-#	y_label_skip      => 4,
-	x_label_skip      => 2,
-	line_width        => 2
-	) or die $graph->error;
-    
-    my $gd = $graph->plot(\@data) or die $graph->error;
-
-    content_type 'png';
-    return $gd->png;
-};
-
-
-get '/data/ubuntu/ps51vsmaria51' => sub {
-    my @data = get_all_data('Ubuntu', 'percona-server-server-5.1', 'mariadb-server-5.1', 'mariadb-server-5.2', 'mariadb-server-5.3');
-
-    content_type 'text/plain';
-
-    my $r="Date,PS 5.1, MariaDB 5.1, MariaDB 5.2, MariaDB 5.3\n";
-    foreach(0..$#{$data[0]})
-    {
-	$r.= "$data[0][$_],$data[1][$_],$data[2][$_],$data[3][$_],$data[4][$_]\n"
-    }
-
-    return $r;
-};
-
-get '/data/ubuntu/ps55vsmaria55' => sub {
-    my @data = get_all_data('Ubuntu', 'percona-server-server-5.5', 'mariadb-server-5.5');
-
-    content_type 'text/plain';
-
-    my $r="Date,PS 5.5, MariaDB 5.5\n";
-    foreach(0..$#{$data[0]})
-    {
-	$r.= "$data[0][$_],$data[1][$_],$data[2][$_]\n"
-    }
-
-    return $r;
-};
-
-get '/data/ubuntu/ps56vsmaria10' => sub {
-    my @data = get_all_data('Ubuntu','percona-server-server-5.6', 'mariadb-server-10.0');
-
-    content_type 'text/plain';
-
-    my $r="Date,PS 5.6, MariaDB 10.0\n";
-    foreach(0..$#{$data[0]})
-    {
-	$r.= "$data[0][$_],$data[1][$_],$data[2][$_]\n"
-    }
-
-    return $r;
-};
-
-
-get '/graph/ubuntu/ps51vsmaria51' => sub {
-
-    my @data = get_all_data('Ubuntu', 'percona-server-server-5.1', 'mariadb-server-5.1', 'mariadb-server-5.2', 'mariadb-server-5.3');
-
-    my $graph = GD::Graph::lines->new(900, 550);
-
-    $graph->set_legend('PS 5.1', 'MariaDB 5.1', 'MariaDB 5.2', 'MariaDB 5.3');
-
-    $graph->set(
-	x_label           => 'Date',
-	y_label           => 'Installs',
-	title             => "PS5.1 vs MariaDB 5.[123] in Ubuntu",
-	y_max_value       => max_y(@{$data[1]}, @{$data[2]}, @{$data[3]}, @{$data[4]}),
-	y_tick_number     => 10,
-#	y_label_skip      => 4,
-	x_label_skip      => 2,
-	line_width        => 2,
-	) or die $graph->error;
-    
-    my $gd = $graph->plot(\@data) or die $graph->error;
-
-    content_type 'png';
-    return $gd->png;
-};
-
-get '/graph/ubuntu/ps55vsmaria55' => sub {
-
-    my @data = get_all_data('Ubuntu', 'percona-server-server-5.5', 'mariadb-server-5.5');
-
-    my $graph = GD::Graph::lines->new(900, 550);
-
-    $graph->set_legend('PS 5.5', 'MariaDB 5.5');
-
-    $graph->set(
-	x_label           => 'Date',
-	y_label           => 'Installs',
-	title             => "PS5.5 vs MariaDB 5.5 in Ubuntu",
-	y_max_value       => max_y(@{$data[1]}, @{$data[2]}),
-	y_tick_number     => 10,
-#	y_label_skip      => 4,
-	x_label_skip      => 2,
-	line_width        => 2,
-	) or die $graph->error;
-    
-    my $gd = $graph->plot(\@data) or die $graph->error;
-
-    content_type 'png';
-    return $gd->png;
-};
-
-get '/graph/ubuntu/ps56vsmaria10' => sub {
-
-    my @data = get_all_data('Ubuntu','percona-server-server-5.6', 'mariadb-server-10.0');
-
-    my $graph = GD::Graph::lines->new(900, 550);
-
-    $graph->set_legend('PS 5.6', 'MariaDB 10.0');
-
-    $graph->set(
-	x_label           => 'Date',
-	y_label           => 'Installs',
-	title             => "PS5.6 vs MariaDB 10.0 in Ubuntu",
-	y_max_value       => max_y(@{$data[1]}, @{$data[2]}),
-	y_tick_number     => 10,
-#	y_label_skip      => 4,
-	x_label_skip      => 2,
-	line_width        => 2,
-	) or die $graph->error;
-    
-    my $gd = $graph->plot(\@data) or die $graph->error;
-
-    content_type 'png';
-    return $gd->png;
-};
-
-
-get '/data/ubuntu/all51' => sub {
-    my @data = get_all_data('Ubuntu', 'percona-server-server-5.1', 'mariadb-server-5.1', 'mariadb-server-5.2', 'mariadb-server-5.3', 'mysql-server-5.1');
-
-    content_type 'text/plain';
-
-    my $r="Date,PS 5.1, MariaDB 5.1, MariaDB 5.2, MariaDB 5.3, MySQL 5.1\n";
-    foreach(0..$#{$data[0]})
-    {
-	$r.= "$data[0][$_],$data[1][$_],$data[2][$_],$data[3][$_],$data[4][$_],$data[5][$_]\n"
-    }
-
-    return $r;
-};
-
-get '/data/ubuntu/all55' => sub {
-    my @data = get_all_data('Ubuntu', 'percona-server-server-5.5', 'mariadb-server-5.5', 'mysql-server-5.5');
-
-    content_type 'text/plain';
-
-    my $r="Date,PS 5.5, MariaDB 5.5,MySQL 5.5\n";
-    foreach(0..$#{$data[0]})
-    {
-	$r.= "$data[0][$_],$data[1][$_],$data[2][$_],$data[3][$_]\n"
-    }
-
-    return $r;
-};
-
-get '/data/ubuntu/all56' => sub {
-    my @data = get_all_data('Ubuntu', 'percona-server-server-5.6', 'mariadb-server-10.0', 'mysql-server-5.6');
-
-    content_type 'text/plain';
-
-    my $r="Date,PS 5.6, MariaDB 10.0,MySQL 5.6\n";
-    foreach(0..$#{$data[0]})
-    {
-	$r.= "$data[0][$_],$data[1][$_],$data[2][$_],$data[3][$_]\n"
-    }
-
-    return $r;
-};
-
-
-get '/graph/ubuntu/all51' => sub {
-
-    my @data = get_all_data('Ubuntu', 'percona-server-server-5.1', 'mariadb-server-5.1', 'mariadb-server-5.2', 'mariadb-server-5.3', 'mysql-server-5.1');
-
-    my $graph = GD::Graph::lines->new(900, 550);
-
-    $graph->set_legend('PS 5.1', 'MariaDB 5.1', 'MariaDB 5.2', 'MariaDB 5.3', 'Oracle MySQL 5.1');
-
-    $graph->set(
-	x_label           => 'Date',
-	y_label           => 'Installs',
-	title             => "PS5.1 vs MariaDB 5.[123] vs Oracle MySQL 5.1 in Ubuntu",
-	y_max_value       => max_y(@{$data[1]}, @{$data[2]}, @{$data[3]}, @{$data[4]}, @{$data[5]}),
-	y_tick_number     => 10,
-#	y_label_skip      => 4,
-	x_label_skip      => 2,
-	line_width        => 2,
-	) or die $graph->error;
-    
-    my $gd = $graph->plot(\@data) or die $graph->error;
-
-    content_type 'png';
-    return $gd->png;
-};
-
-get '/graph/ubuntu/all55' => sub {
-
-    my @data = get_all_data('Ubuntu', 'percona-server-server-5.5', 'mariadb-server-5.5', 'mysql-server-5.5');
-
-    my $graph = GD::Graph::lines->new(900, 550);
-
-    $graph->set_legend('PS 5.5', 'MariaDB 5.5', 'Oracle MySQL 5.5');
-
-    $graph->set(
-	x_label           => 'Date',
-	y_label           => 'Installs',
-	title             => "PS5.5 vs MariaDB 5.5 vs Oracle MySQL 5.5 in Ubuntu",
-	y_max_value       => max_y(@{$data[1]}, @{$data[2]}, @{$data[3]}),
-	y_tick_number     => 10,
-#	y_label_skip      => 4,
-	x_label_skip      => 2,
-	line_width        => 2,
-	) or die $graph->error;
-    
-    my $gd = $graph->plot(\@data) or die $graph->error;
-
-    content_type 'png';
-    return $gd->png;
-};
-
-get '/graph/ubuntu/all56' => sub {
-
-    my @data = get_all_data('Ubuntu', 'percona-server-server-5.6', 'mariadb-server-5.6', 'mysql-server-5.6');
-
-    my $graph = GD::Graph::lines->new(900, 550);
-
-    $graph->set_legend('PS 5.6', 'MariaDB 10.0', 'Oracle MySQL 5.6');
-
-    $graph->set(
-	x_label           => 'Date',
-	y_label           => 'Installs',
-	title             => "PS5.6 vs MariaDB 10.0 vs Oracle MySQL 5.6 in Ubuntu",
-	y_max_value       => max_y(@{$data[1]}, @{$data[2]}, @{$data[3]}),
-	y_tick_number     => 10,
-#	y_label_skip      => 4,
-	x_label_skip      => 2,
-	line_width        => 2,
-	) or die $graph->error;
-    
-    my $gd = $graph->plot(\@data) or die $graph->error;
-
-    content_type 'png';
-    return $gd->png;
-};
 
 
 true;
