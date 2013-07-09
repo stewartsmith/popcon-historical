@@ -97,6 +97,16 @@ get '/' => sub {
 		  ]
 	    },
 
+	    { title=>'MySQL Clients',
+	      items=> [
+		  { name=>'Percona Clients Vs MariaDB Clients',
+		    's'=> [ { url=>'?title=Percona%20Clients%20vs%20MariaDB%20Clients&packages=percona-server-client-5.1,percona-server-client-5.5,percona-server-client-5.6,,mariadb-client-5.1,mariadb-client-5.2,mariadb-client-5.3,mariadb-client-5.5,mariadb-client-10.0'} ] },
+		  { name=>'All Clients',
+		    's'=> [ { url=>'?title=Percona%20Clients%20vs%20MariaDB%20Clients&packages=percona-server-client-5.1,percona-server-client-5.5,percona-server-client-5.6,,mariadb-client-5.1,mariadb-client-5.2,mariadb-client-5.3,mariadb-client-5.5,mariadb-client-10.0,mysql-client-5.0,mysql-client-5.1,mysql-client-5.5'} ] }
+		  ]
+	    },
+
+
 
 
 	    ]
