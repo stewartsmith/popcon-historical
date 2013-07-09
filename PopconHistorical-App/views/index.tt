@@ -1,0 +1,84 @@
+  
+<!-- 
+    Credit goes to the Ruby on Rails team for this page 
+    has been heavily based on the default Rails page that is 
+    built with a scaffolded application.
+
+    Thanks a lot to them for their work.
+
+    See Ruby on Rails if you want a kickass framework in Ruby:
+    http://www.rubyonrails.org/
+-->
+
+<div id="page">
+      <div id="sidebar">
+        <ul id="sidebar-items">
+          <li>
+            <h3>Historical Popcon</h3>
+          </li>
+          
+        </ul>
+
+      </div>
+
+      <div id="content">
+        <div id="header">
+          <h1>Historical Popcon</h1>
+          <h2>A way to get data out of historical Popcon data</h2>
+        </div>
+
+      <div id="distro-list">
+       <ul> 
+<% FOREACH distro = distros %>
+                 <li><% distro %></li>
+             <% END %>
+      </div>
+
+      <h2>Graphs</h2>
+      <ul>
+      <li>5.1 versions
+          <ul>
+	  <li><a href="/graph/ubuntu/ps51vsmaria51">PS 5.1 vs MariaDB 5.1 in Ubuntu</a></li>
+	  <li><a href="/graph/ubuntu/all51">PS, Maria and Oracle 5.1 in Ubuntu</a></li>
+	  </ul>
+      </li>
+
+      <li>5.5 versions
+          <ul>
+	  <li><a href="/graph/ubuntu/ps55vsmaria55">PS 5.5 vs MariaDB 5.5 in Ubuntu</a></li>
+	  <li><a href="/graph/ubuntu/all55">PS, Maria and Oracle 5.5 in Ubuntu</a></li>
+	  </ul>
+      </li>
+
+      <li>5.6 versions
+          <ul>
+	  <li><a href="/graph/ubuntu/ps56vsmaria10">PS 5.6 vs MariaDB 10.0 in Ubuntu</a></li>
+	  <li><a href="/graph/ubuntu/all56">PS 5.6, Maria 10.0 and Oracle 5.6 in Ubuntu</a></li>
+	  </ul>
+      </li>
+      </ul>
+
+      <h2>Raw Data</h2>
+      <ul>
+      <li>5.1 versions
+       <ul>
+        <li><a href="/data/ubuntu/ps51vsmaria51">PS 5.1 vs MariaDB 5.1 in Ubuntu</a></li>
+        <li><a href="/data/ubuntu/all51">PS, Maria and Oracle 5.1 in Ubuntu</a></li>
+       </ul>
+      </li>
+      <li>5.5 versions
+       <ul>
+        <li><a href="/data/ubuntu/ps55vsmaria55">PS 5.5 vs MariaDB 5.5 in Ubuntu</a></li>
+        <li><a href="/data/ubuntu/all55">PS, Maria and Oracle 5.5 in Ubuntu</a></li>
+       </ul>
+      </li>
+      <li>5.6/10.0 versions
+       <ul>
+        <li><a href="/data/ubuntu/ps56vsmaria10">PS 5.6 vs MariaDB 10.0 in Ubuntu</a></li>
+        <li><a href="/data/ubuntu/all56">PS 5.6 , Maria 10.0 and Oracle 5.6 in Ubuntu</a></li>
+       </ul>
+      </li>
+
+      </ul>
+
+    </div>
