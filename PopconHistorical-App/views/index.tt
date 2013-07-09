@@ -36,6 +36,17 @@
 
       <h2>Graphs</h2>
       <ul>
+      <li>Percona Toolkit
+          <ul>
+            <li><a href="/graph/ubuntu/pt">Percona Toolkit in Ubuntu</a></li>
+	  </ul>
+      </li>
+      <li>XtraBackup
+          <ul>
+            <li><a href="/graph/ubuntu/xtrabackup">Percona XtraBackup in Ubuntu</a></li>
+	    <li><a href="/graph/ubuntu/backup">MySQL backup solutions in Ubuntu</a></li>
+	  </ul>
+      </li>
       <li>5.1 versions
           <ul>
 	  <li><a href="/graph/ubuntu/ps51vsmaria51">PS 5.1 vs MariaDB 5.1 in Ubuntu</a></li>
@@ -60,6 +71,17 @@
 
       <h2>Raw Data</h2>
       <ul>
+      <li>Percona Toolkit
+          <ul>
+            <li><a href="/data/ubuntu/pt">Percona Toolkit in Ubuntu</a></li>
+	  </ul>
+      </li>
+      <li>XtraBackup
+          <ul>
+	    <li><a href="/data/ubuntu/xtrabackup">Percona XtraBackup in Ubuntu</a></li>
+	    <li><a href="/data/ubuntu/backup">MySQL backup solutions in Ubuntu</a></li>
+          </ul>
+      </li>
       <li>5.1 versions
        <ul>
         <li><a href="/data/ubuntu/ps51vsmaria51">PS 5.1 vs MariaDB 5.1 in Ubuntu</a></li>
