@@ -1,3 +1,11 @@
+-- Schema for popcon-historical
+--
+-- This has all been tested on Drizzle. YMMV with other databases.
+--
+-- (C) 2013 Percona Ireland Ltd
+-- Written by Stewart Smith
+--
+
 CREATE TABLE `popcon` (
        id bigint auto_increment,
        distro varchar(100),

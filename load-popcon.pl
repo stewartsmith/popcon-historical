@@ -1,5 +1,19 @@
 #!/usr/bin/perl
 
+# Load data into popcon-historical
+# --------------------------------
+#
+# Uses DBD:MySQL to talk to Drizzle running on localhost.
+#
+# Example:
+#  $ ./load-popcon.pl --distro=Ubuntu --date=20130701 --file=popcon-ubuntu-2013-07-01.txt.gz
+#
+# Known bugs:
+# 	- we should do better things for inserting into package table so
+# 	  that we don't do locks
+# 	- About zero error reporting, although we do run in a transaction,
+# 	  so you'll just get ROLLBACK in event of error.
+
 use strict;
 use autodie;
 

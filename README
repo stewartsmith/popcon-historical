@@ -1,0 +1,43 @@
+popcon-historical
+-----------------
+
+A quick little app for examining historical trends in the results from Debian/Ubuntu popularity contest.
+
+You will need:
+- A Drizzle database server (any stable version should work)
+- Perl DBD:MySQL
+- Perl
+- Perl Dancer
+- Probably to read the source as my instructions are no doubt wrong.
+- historical popcon data
+
+All the packages in Ubuntu 12.04 (precise) are recent enough.
+
+To run:
+1) Fetch data. I've mirrored some here:
+	https://flamingspork.com/popcon-historical/data/
+   Debian comes from the Wayback machine
+   Ubuntu comes from http://ubuntu-popcon.43-1.org/data/
+	The above site has much finer grained results if you're interested,
+	going back to 2010.
+
+2) Connect to Drizzle, "CREATE SCHEMA popcon", then run commands
+   in create_scheam.sql (e.g. by running ". create_scheam.sql" from drizzle
+   command line client).
+
+3) Load data. e.g.:
+   $ perl load-popcon.pl --distro=Debian --date=20120303 --file=popcon-debian-2012-03-03.txt.gz
+
+   If you've set up authentication on Drizzle or are running the MySQL protocol
+   plugin on a port other than 3306 or create a schema not named 'popcon' then
+   you'll have to go edit the script, sorry.
+
+   You currently cannot run more than one of these concurrently. Patches++.
+
+4) Run the web app:
+   $ cd PopconHistorical-App
+   $ ./bin/app.pl
+
+5) Load up a web browser to http://127.0.0.1:3000 (or whatever Dancer tells you to)
+
+
