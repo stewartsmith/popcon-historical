@@ -30,7 +30,7 @@
       <div id="distro-list">
        <ul> 
 <% FOREACH distro = distros %>
-                 <li><% distro %></li>
+                 <li><a href="/popcons/<% distro %>"><% distro %></a></li>
              <% END %>
       </div>
 

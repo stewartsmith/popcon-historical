@@ -11,7 +11,12 @@ our $VERSION = '0.1';
 my $dsn= "DBI:mysql:database=popcon;host=127.0.0.1;port=3306";
 my $user= "root";
 my $password= undef;
-my $dbh = DBI->connect($dsn, $user, $password, { 'auto_reconnect'=>1 }) or die $!;
+
+sub db_connect()
+{
+    return DBI->connect($dsn, $user, $password, { 'auto_reconnect'=>1 }) or die $!;
+}
+
 
 sub max_y
 {
@@ -22,8 +27,9 @@ sub max_y
     return $max_y;
 }
 
-sub get_distros()
+sub get_distros($)
 {
+    my $dbh = shift;
     my @distros;
     my $sql= "SELECT DISTINCT distro FROM popcon ORDER BY distro";
     my $r= $dbh->selectall_arrayref($sql) or die $!;
@@ -36,7 +42,7 @@ sub get_distros()
 
 get '/' => sub {
     template 'index', {
-	'distros' => [get_distros()] ,
+	'distros' => [get_distros(db_connect())] ,
 	'comparisons' => [
 	    { title=>'MySQL',
 	      items=>[
@@ -131,9 +137,9 @@ get '/' => sub {
     };
 };
 
-sub get_popcons($)
+sub get_popcons($$)
 {
-    my ($distro) = @_;
+    my ($dbh, $distro) = @_;
     my $sql = "select popcon_date from popcon where distro=?";
     my $sth= $dbh->prepare($sql);
     $sth->execute($distro) or die $!;
@@ -147,12 +153,22 @@ sub get_popcons($)
     }
 
     return %p;
-}    
+}
 
+get '/popcons/*' => sub {
+    my ($distro) = splat;
 
-sub get_nr_for_package($$$)
+    my %popcons= get_popcons(db_connect(), $distro);
+
+    template 'popcons', {
+	'distro' => $distro,
+	'popcons' => [sort keys %popcons] ,
+    }
+};
+
+sub get_nr_for_package($$$$)
 {
-    my ($pkg, $distro,$counter) = @_;
+    my ($dbh, $pkg, $distro,$counter) = @_;
 
     my $c= "vote_nr+no_files_nr+recent_nr";
     $c= "inst_nr" if($counter eq "inst");
@@ -172,17 +188,17 @@ sub get_nr_for_package($$$)
     return ( \@x, \@y );
 }
 
-sub get_all_data($@)
+sub get_all_data($$@)
 {
-    my ($counter, $distro, @packages) = @_;
+    my ($dbh, $counter, $distro, @packages) = @_;
 
-    my %p = get_popcons($distro);
+    my %p = get_popcons($dbh, $distro);
 
     my @rdata;
 
     foreach (@packages)
     {
-	push @rdata, [get_nr_for_package($_,$distro, $counter)];
+	push @rdata, [get_nr_for_package($dbh, $_,$distro, $counter)];
     }
 
     foreach my $pkg (0..$#packages)
@@ -212,7 +228,7 @@ get '/data/*/*.*' => sub {
     my ($distro, $inst, $fmt) = splat;
     my @pkgs = split /,/,param 'packages';
 
-    my @data = get_all_data($inst, $distro, @pkgs);
+    my @data = get_all_data(db_connect(), $inst, $distro, @pkgs);
 
     content_type 'text/plain' if $fmt eq 'txt';
     content_type 'text/csv' if $fmt eq 'csv';
@@ -233,7 +249,7 @@ get '/graph/*/*' => sub {
     my ($distro, $inst) = splat;
     my @pkgs = split /,/,param 'packages';
 
-    my @data = get_all_data($inst, $distro, @pkgs);
+    my @data = get_all_data(db_connect(), $inst, $distro, @pkgs);
 
     my $graph = GD::Graph::lines->new(900, 550);
 
@@ -254,7 +270,7 @@ get '/graph/*/*' => sub {
 	y_max_value       => $max_y_val,
 	y_tick_number     => 10,
 #	y_label_skip      => 4,
-	x_label_skip      => 2,
+	x_label_skip      => 6,
 	line_width        => 2,
 	) or die $graph->error;
     
@@ -267,7 +283,7 @@ get '/graph/*/*' => sub {
 get '/graph/*/*/*' => sub {
     my ($distro, $pkg, $inst) = splat;
 
-    my @data = get_nr_for_package($pkg, $distro, $inst);
+    my @data = get_nr_for_package(db_connect(), $pkg, $distro, $inst);
 
     my $graph = GD::Graph::lines->new(900, 550);
 
@@ -294,7 +310,7 @@ get '/graph/*/*/*' => sub {
 
 get '/data/*/*/*' => sub {
     my ($distro,$pkg,$inst) = splat;
-    my @data = get_nr_for_package($pkg, $distro, $inst);
+    my @data = get_nr_for_package(db_connect(), $pkg, $distro, $inst);
 
     content_type 'text/csv';
 
