@@ -11,7 +11,12 @@ our $VERSION = '0.1';
 my $dsn= "DBI:mysql:database=popcon;host=127.0.0.1;port=3306";
 my $user= "root";
 my $password= undef;
-my $dbh = DBI->connect($dsn, $user, $password, { 'auto_reconnect'=>1 }) or die $!;
+
+sub db_connect()
+{
+    return DBI->connect($dsn, $user, $password, { 'auto_reconnect'=>1 }) or die $!;
+}
+
 
 sub max_y
 {
@@ -22,8 +27,9 @@ sub max_y
     return $max_y;
 }
 
-sub get_distros()
+sub get_distros($)
 {
+    my $dbh = shift;
     my @distros;
     my $sql= "SELECT DISTINCT distro FROM popcon ORDER BY distro";
     my $r= $dbh->selectall_arrayref($sql) or die $!;
@@ -36,7 +42,7 @@ sub get_distros()
 
 get '/' => sub {
     template 'index', {
-	'distros' => [get_distros()] ,
+	'distros' => [get_distros(db_connect())] ,
 	'comparisons' => [
 	    { title=>'MySQL',
 	      items=>[
@@ -131,12 +137,15 @@ get '/' => sub {
     };
 };
 
-sub get_popcons($)
+sub get_popcons($$$)
 {
-    my ($distro) = @_;
+    my ($dbh, $distro, $from) = @_;
     my $sql = "select popcon_date from popcon where distro=?";
+    $sql.=" AND popcon_date >= ?" if $from;
     my $sth= $dbh->prepare($sql);
-    $sth->execute($distro) or die $!;
+    my @arg= ($distro);
+    push @arg, $from if $from;
+    $sth->execute(@arg) or die $!;
 
     my $r= $sth->fetchall_arrayref;
 
@@ -147,19 +156,51 @@ sub get_popcons($)
     }
 
     return %p;
-}    
+}
 
+get '/popcons/*' => sub {
+    my ($distro) = splat;
 
-sub get_nr_for_package($$$)
+    my %popcons= get_popcons(db_connect(), $distro, undef);
+
+    template 'popcons', {
+	'distro' => $distro,
+	'popcons' => [sort keys %popcons] ,
+    }
+};
+
+get '/packages/' => sub {
+
+    my $dbh = db_connect();
+
+    my $sql = "select package from package";
+    my $sth= $dbh->prepare($sql);
+    $sth->execute() or die $!;
+
+    my $r= $sth->fetchall_arrayref;
+
+    my %p;
+
+    foreach (@$r) {
+	print ($$_[0]);
+    }
+    
+};
+
+sub get_nr_for_package($$$$$)
 {
-    my ($pkg, $distro,$counter) = @_;
+    my ($dbh, $pkg, $distro, $from, $counter) = @_;
 
     my $c= "vote_nr+no_files_nr+recent_nr";
     $c= "inst_nr" if($counter eq "inst");
     
-    my $sql= "select popcon_date,$c from popcon_package LEFT JOIN popcon ON popcon.id=popcon_id LEFT JOIN package ON package_id=package.id where package=? and distro=? order by package, popcon_date";
+    my $sql= "select popcon_date,$c from popcon_package LEFT JOIN popcon ON popcon.id=popcon_id LEFT JOIN package ON package_id=package.id where package=? and distro=? ";
+    $sql.=" AND popcon_date >= ? " if $from;
+    $sql.="order by package, popcon_date";
     my $sth= $dbh->prepare($sql);
-    $sth->execute($pkg, $distro) or die $!;
+    my @arg = ($pkg, $distro);
+    push @arg, $from if $from;
+    $sth->execute(@arg) or die $!;
 
     my $r= $sth->fetchall_arrayref;
 
@@ -172,17 +213,17 @@ sub get_nr_for_package($$$)
     return ( \@x, \@y );
 }
 
-sub get_all_data($@)
+sub get_all_data($$@)
 {
-    my ($counter, $distro, @packages) = @_;
+    my ($dbh, $counter, $distro, $from, @packages) = @_;
 
-    my %p = get_popcons($distro);
+    my %p = get_popcons($dbh, $distro, $from);
 
     my @rdata;
 
     foreach (@packages)
     {
-	push @rdata, [get_nr_for_package($_,$distro, $counter)];
+	push @rdata, [get_nr_for_package($dbh, $_,$distro, $from, $counter)];
     }
 
     foreach my $pkg (0..$#packages)
@@ -212,17 +253,21 @@ get '/data/*/*.*' => sub {
     my ($distro, $inst, $fmt) = splat;
     my @pkgs = split /,/,param 'packages';
 
-    my @data = get_all_data($inst, $distro, @pkgs);
+    my @data = get_all_data(db_connect(), $inst, $distro, param('from'), @pkgs);
 
     content_type 'text/plain' if $fmt eq 'txt';
+    content_type 'text/plain' if $fmt eq 'tab';
     content_type 'text/csv' if $fmt eq 'csv';
 
-    my $r=join ',',("Date",@pkgs);
+    my $j=',';
+    $j="\t" if $fmt eq 'tab';
+
+    my $r=join $j,("Date",@pkgs);
     $r.="\n";
     foreach my $s (0..$#{$data[0]})
     {
 	$r.= "$data[0][$s]";
-	$r.=",$data[$_+1][$s]" foreach (0..$#pkgs);
+	$r.="$j$data[$_+1][$s]" foreach (0..$#pkgs);
 	$r.="\n";
     }
     return $r;
@@ -233,7 +278,7 @@ get '/graph/*/*' => sub {
     my ($distro, $inst) = splat;
     my @pkgs = split /,/,param 'packages';
 
-    my @data = get_all_data($inst, $distro, @pkgs);
+    my @data = get_all_data(db_connect(), $inst, $distro, param('from'),@pkgs);
 
     my $graph = GD::Graph::lines->new(900, 550);
 
@@ -254,7 +299,8 @@ get '/graph/*/*' => sub {
 	y_max_value       => $max_y_val,
 	y_tick_number     => 10,
 #	y_label_skip      => 4,
-	x_label_skip      => 2,
+	x_label_skip      => ($#data%12),
+	x_tick_offset     => ($#data%6),
 	line_width        => 2,
 	) or die $graph->error;
     
@@ -267,7 +313,7 @@ get '/graph/*/*' => sub {
 get '/graph/*/*/*' => sub {
     my ($distro, $pkg, $inst) = splat;
 
-    my @data = get_nr_for_package($pkg, $distro, $inst);
+    my @data = get_nr_for_package(db_connect(), $pkg, $distro, param('from'), $inst);
 
     my $graph = GD::Graph::lines->new(900, 550);
 
@@ -294,7 +340,7 @@ get '/graph/*/*/*' => sub {
 
 get '/data/*/*/*' => sub {
     my ($distro,$pkg,$inst) = splat;
-    my @data = get_nr_for_package($pkg, $distro, $inst);
+    my @data = get_nr_for_package(db_connect(), $pkg, $distro, param('from'), $inst);
 
     content_type 'text/csv';
 
@@ -308,6 +354,23 @@ get '/data/*/*/*' => sub {
     return $r;
 };
 
+get '/report/*' => sub {
+    my ($distro) = splat;
+    my @pkgs = split /,/,param 'packages';
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+
+    my $from = sprintf("%04d%02d%02d", $year+1900-1, $mon+1, $mday);
+
+    template 'report', {
+	'report_title' => param('title')." Report",
+	'title' => param('title'),
+	'packages' => param('packages'),
+	'distro'=> $distro,
+	'from'=> $from,
+    }
+    
+};
 
 
 true;

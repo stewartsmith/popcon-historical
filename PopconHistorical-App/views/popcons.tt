@@ -1,0 +1,8 @@
+
+<h2>Popcon results for <% distro %></h2>
+
+<ul> 
+<% FOREACH popcon = popcons %>
+   <li><% popcon %></li>
+<% END %>
+</ul>

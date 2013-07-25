@@ -1,0 +1,25 @@
+<div id="page">
+<h1><% report_title %></h1>
+
+<h2>Installed</h2>
+ <h3>All</h3>
+  <p>
+  <img src="/graph/<% distro %>/inst?title=<%title%>&packages=<%packages%>"/>
+  </p>
+ <h3>Past 12 months</h3>
+  <p>
+  <img src="/graph/<% distro %>/inst?from=<%from%>&title=<%title%>&packages=<%packages%>"/>
+  </p>
+
+<h2>Recent</h2>
+ <h3>All</h3>
+  <p>
+  <img src="/graph/<% distro %>/recent?title=<%title%>&packages=<%packages%>"/>
+  </p>
+ <h3>Past 12 months</h3>
+  <p>
+  <img src="/graph/<% distro %>/inst?from=<%from%>&title=<%title%>&packages=<%packages%>"/>
+  </p>
+
+
+</div>

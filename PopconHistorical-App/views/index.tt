@@ -27,10 +27,14 @@
           <h2>A way to get data out of historical Popcon data</h2>
         </div>
 
+      <div id="packages">
+         <p><a href="/packages/<% distro %>">Package List</a></p>
+      </div>
+
       <div id="distro-list">
        <ul> 
 <% FOREACH distro = distros %>
-                 <li><% distro %></li>
+                 <li><a href="/popcons/<% distro %>"><% distro %></a></li>
              <% END %>
       </div>
 
@@ -43,8 +47,9 @@
 	  <% FOREACH item = comparison.items %>
 	    <li><% item.name %>
 	    	<% FOREACH g = item.s %>
-		<a href="/graph/<% distro %>/inst<% g.url %>">Installed</a> (<a href="/data/<% distro %>/inst.txt<% g.url %>">txt</a> <a href="/data/<% distro %>/inst.csv<% g.url %>">csv</a>)
-		<a href="/graph/<% distro %>/recent<% g.url %>">Recent</a> (<a href="/data/<% distro %>/recent.txt<% g.url %>">txt</a> <a href="/data/<% distro %>/recent.csv<% g.url %>">csv</a>)
+		<a href="/report/<% distro %><% g.url %>">Report</a> - 
+		<a href="/graph/<% distro %>/inst<% g.url %>">Installed</a> (<a href="/data/<% distro %>/inst.txt<% g.url %>">txt</a> <a href="/data/<% distro %>/inst.csv<% g.url %>">csv</a> <a href="/data/<% distro %>/inst.tab<% g.url %>">tab</a>)
+		<a href="/graph/<% distro %>/recent<% g.url %>">Recent</a> (<a href="/data/<% distro %>/recent.txt<% g.url %>">txt</a> <a href="/data/<% distro %>/recent.csv<% g.url %>">csv</a> <a href="/data/<% distro %>/recent.tab<% g.url %>">tab</a>)
 		<% END %>
             </li>
           <% END %>
