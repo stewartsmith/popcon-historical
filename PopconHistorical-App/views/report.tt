@@ -18,7 +18,7 @@
   </p>
  <h3>Past 12 months</h3>
   <p>
-  <img src="/graph/<% distro %>/inst?from=<%from%>&title=<%title%>&packages=<%packages%>"/>
+  <img src="/graph/<% distro %>/recent?from=<%from%>&title=<%title%>&packages=<%packages%>"/>
   </p>
 
 
